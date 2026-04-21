@@ -29,8 +29,8 @@
       border-radius: 1rem; border: 1px solid #1e293b;
       padding: 1.5rem; overflow-x: auto;
     }
-    svg { width: 100%; min-width: 960px; display: block; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 2rem; }
     .card {
       background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem;
       border: 1px solid #1e293b; padding: 1.25rem;
@@ -56,12 +56,12 @@
       <div class="pulse-dot"></div>
       <h1>Peer Review Simulator — Architecture</h1>
     </div>
-    <p class="subtitle">Streamlit app · Anthropic/OpenAI LLM backend · ReportLab PDF export</p>
+    <p class="subtitle">Streamlit · Ollama / Anthropic / OpenAI · ReportLab PDF</p>
   </div>
 
   <!-- Main Diagram -->
   <div class="diagram-container">
-    <svg viewBox="0 0 1000 760" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 1060 820" xmlns="http://www.w3.org/2000/svg">
 
       <defs>
         <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -88,212 +88,269 @@
       <rect width="100%" height="100%" fill="url(#grid)"/>
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <!-- FRONTEND BOUNDARY                                        -->
+      <!-- SECTION A: FRONTEND (User → Streamlit UI)            -->
       <!-- ═══════════════════════════════════════════════════════ -->
-      <rect x="20" y="20" width="960" height="140" rx="12"
-        fill="rgba(8, 51, 68, 0.15)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="6,4"/>
-      <text x="32" y="38" fill="#22d3ee" font-size="9" font-weight="600">FRONTEND</text>
+
+      <!-- FRONTEND boundary -->
+      <rect x="20" y="20" width="1020" height="100" rx="10"
+        fill="rgba(8, 51, 68, 0.15)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="32" y="38" fill="#22d3ee" font-size="9" font-weight="700" letter-spacing="0.1em">FRONTEND</text>
+
+      <!-- User icon -->
+      <ellipse cx="60" cy="70" rx="22" ry="22" fill="rgba(8, 51, 68, 0.5)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="60" y="65" fill="#94a3b8" font-size="8" text-anchor="middle">👤</text>
+      <text x="60" y="78" fill="#94a3b8" font-size="7" text-anchor="middle">Browser</text>
+
+      <!-- Arrow: User → Streamlit -->
+      <line x1="82" y1="70" x2="130" y2="70" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr-cyan)"/>
+      <text x="106" y="64" fill="#94a3b8" font-size="8">HTTP :8501</text>
 
       <!-- Streamlit UI box -->
-      <rect x="32" y="52" width="200" height="90" rx="6"
-        fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1.5"/>
-      <text x="132" y="74" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/main.py</text>
-      <text x="132" y="88" fill="#22d3ee" font-size="9" text-anchor="middle">Streamlit UI</text>
-      <text x="132" y="102" fill="#94a3b8" font-size="8" text-anchor="middle">Sidebar · Tabs · Accordions</text>
-      <text x="132" y="115" fill="#94a3b8" font-size="8" text-anchor="middle">PDF Download Button</text>
+      <rect x="130" y="42" width="210" height="58" rx="6"
+        fill="rgba(8, 51, 68, 0.7)" stroke="#22d3ee" stroke-width="2"/>
+      <text x="235" y="62" fill="white" font-size="11" font-weight="700" text-anchor="middle">app/main.py</text>
+      <text x="235" y="76" fill="#22d3ee" font-size="9" text-anchor="middle">Streamlit UI</text>
+      <text x="235" y="89" fill="#94a3b8" font-size="8" text-anchor="middle">Sidebar · Tabs · Accordions · PDF Download</text>
 
-      <!-- Paper input sources -->
-      <rect x="280" y="52" width="130" height="52" rx="6"
-        fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
-      <text x="345" y="70" fill="white" font-size="10" font-weight="600" text-anchor="middle">Paper Input</text>
-      <text x="345" y="84" fill="#94a3b8" font-size="8" text-anchor="middle">Paste Text / DOCX / PDF</text>
-      <text x="345" y="97" fill="#94a3b8" font-size="8" text-anchor="middle">→ paper_loader</text>
+      <!-- Arrow: UI → paper_loader -->
+      <line x1="340" y1="70" x2="380" y2="70" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr-cyan)"/>
+      <text x="360" y="64" fill="#94a3b8" font-size="8">paper_text</text>
 
-      <!-- Config sidebar -->
-      <rect x="280" y="116" width="130" height="26" rx="6"
-        fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
-      <text x="345" y="132" fill="#94a3b8" font-size="8" text-anchor="middle">Config: Venue + Personas</text>
+      <!-- Config box (inside frontend) -->
+      <rect x="420" y="42" width="180" height="58" rx="6"
+        fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="510" y="62" fill="white" font-size="11" font-weight="700" text-anchor="middle">app/config.py</text>
+      <text x="510" y="76" fill="#fbbf24" font-size="8" text-anchor="middle">VENUES · PERSONAS · DIMENSIONS</text>
+      <text x="510" y="89" fill="#94a3b8" font-size="8" text-anchor="middle">6 venues · 5 personas · 5 dims</text>
 
-      <!-- Arrow: input → main -->
-      <line x1="280" y1="78" x2="232" y2="78" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
-      <text x="256" y="72" fill="#94a3b8" font-size="8" text-anchor="middle">paper_text</text>
+      <!-- Arrow: UI → config -->
+      <line x1="235" y1="100" x2="510" y2="100" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <line x1="510" y1="100" x2="510" y2="100" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="372" y="95" fill="#fbbf24" font-size="8">venue + persona config</text>
+
+      <!-- Arrow: config → pipeline modules -->
+      <line x1="510" y1="100" x2="380" y2="150" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="600" y1="71" x2="700" y2="200" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="600" y1="71" x2="830" y2="200" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
+
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <!-- PROCESSING PIPELINE BOUNDARY                             -->
+      <!-- SECTION B: PROCESSING PIPELINE                       -->
       <!-- ═══════════════════════════════════════════════════════ -->
-      <rect x="20" y="180" width="960" height="220" rx="12"
-        fill="rgba(6, 78, 59, 0.1)" stroke="#34d399" stroke-width="1" stroke-dasharray="6,4"/>
-      <text x="32" y="198" fill="#34d399" font-size="9" font-weight="600">PROCESSING PIPELINE</text>
+
+      <!-- PIPELINE boundary -->
+      <rect x="20" y="130" width="1020" height="280" rx="10"
+        fill="rgba(6, 78, 59, 0.08)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="32" y="148" fill="#34d399" font-size="9" font-weight="700" letter-spacing="0.1em">PROCESSING PIPELINE</text>
 
       <!-- paper_loader -->
-      <rect x="32" y="212" width="150" height="80" rx="6"
+      <rect x="30" y="165" width="155" height="70" rx="6"
         fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
-      <text x="107" y="233" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/paper_loader.py</text>
-      <text x="107" y="250" fill="#34d399" font-size="8" text-anchor="middle">python-docx</text>
-      <text x="107" y="263" fill="#34d399" font-size="8" text-anchor="middle">pdfplumber</text>
-      <text x="107" y="276" fill="#34d399" font-size="8" text-anchor="middle">raw text passthrough</text>
+      <text x="107" y="185" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/paper_loader.py</text>
+      <text x="107" y="200" fill="#34d399" font-size="8" text-anchor="middle">python-docx</text>
+      <text x="107" y="212" fill="#34d399" font-size="8" text-anchor="middle">pdfplumber</text>
+      <text x="107" y="224" fill="#34d399" font-size="8" text-anchor="middle">raw text passthrough</text>
 
       <!-- Arrow: loader → reviewer_engine -->
-      <line x1="182" y1="252" x2="232" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
-      <text x="207" y="246" fill="#94a3b8" font-size="8" text-anchor="middle">paper_text</text>
+      <line x1="185" y1="200" x2="215" y2="200" stroke="#34d399" stroke-width="2" marker-end="url(#arr-emerald)"/>
+      <text x="200" y="194" fill="#94a3b8" font-size="8">paper_text</text>
 
       <!-- reviewer_engine -->
-      <rect x="232" y="212" width="170" height="80" rx="6"
+      <rect x="215" y="165" width="175" height="70" rx="6"
         fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
-      <text x="317" y="233" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/reviewer_engine.py</text>
-      <text x="317" y="250" fill="#34d399" font-size="8" text-anchor="middle">_get_llm_client()</text>
-      <text x="317" y="263" fill="#34d399" font-size="8" text-anchor="middle">_call_llm() → JSON</text>
-      <text x="317" y="276" fill="#34d399" font-size="8" text-anchor="middle">generate_review()</text>
+      <text x="302" y="185" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/reviewer_engine.py</text>
+      <text x="302" y="200" fill="#34d399" font-size="8" text-anchor="middle">get_client()</text>
+      <text x="302" y="212" fill="#34d399" font-size="8" text-anchor="middle">client.complete() → JSON</text>
+      <text x="302" y="224" fill="#34d399" font-size="8" text-anchor="middle">generate_review()</text>
 
-      <!-- prompts box (tall, beside reviewer_engine) -->
-      <rect x="232" y="304" width="170" height="76" rx="6"
-        fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1.5"/>
-      <text x="317" y="322" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/prompts/</text>
-      <text x="317" y="337" fill="#a78bfa" font-size="8" text-anchor="middle">system_prompt.py</text>
-      <text x="317" y="350" fill="#a78bfa" font-size="8" text-anchor="middle">reviewer_prompts.py</text>
-      <text x="317" y="363" fill="#a78bfa" font-size="8" text-anchor="middle">meta_review_prompt.py</text>
+      <!-- Arrow: reviewer_engine → llm_client -->
+      <line x1="390" y1="200" x2="430" y2="200" stroke="#34d399" stroke-width="2" marker-end="url(#arr-emerald)"/>
+      <text x="410" y="194" fill="#94a3b8" font-size="8">complete()</text>
 
-      <!-- Arrow: prompts → reviewer_engine -->
-      <line x1="317" y1="304" x2="317" y2="292" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
-      <text x="330" y="298" fill="#a78bfa" font-size="8">prompt strings</text>
+      <!-- llm_client -->
+      <rect x="430" y="165" width="170" height="70" rx="6"
+        fill="rgba(76, 29, 149, 0.6)" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="515" y="185" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/llm_client.py</text>
+      <text x="515" y="200" fill="#a78bfa" font-size="8" text-anchor="middle">get_client()</text>
+      <text x="515" y="212" fill="#a78bfa" font-size="8" text-anchor="middle">provider: ollama / anthropic / openai</text>
+      <text x="515" y="224" fill="#94a3b8" font-size="8" text-anchor="middle">complete() → raw text</text>
 
-      <!-- Arrow: reviewer_engine → meta_review -->
-      <line x1="402" y1="252" x2="462" y2="252" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
-      <text x="432" y="246" fill="#94a3b8" font-size="8" text-anchor="middle">ReviewResult[]</text>
+      <!-- Arrow: llm_client → meta_review (return result) -->
+      <line x1="600" y1="200" x2="640" y2="200" stroke="#a78bfa" stroke-width="2" marker-end="url(#arr-violet)"/>
+      <text x="620" y="194" fill="#94a3b8" font-size="8">raw text</text>
 
       <!-- meta_review -->
-      <rect x="462" y="212" width="170" height="80" rx="6"
+      <rect x="640" y="165" width="175" height="70" rx="6"
         fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
-      <text x="547" y="233" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/meta_review.py</text>
-      <text x="547" y="250" fill="#34d399" font-size="8" text-anchor="middle">synthesize_meta_review()</text>
-      <text x="547" y="263" fill="#34d399" font-size="8" text-anchor="middle">compute_average_scores()</text>
-      <text x="547" y="276" fill="#34d399" font-size="8" text-anchor="middle">→ meta_review dict</text>
+      <text x="727" y="185" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/meta_review.py</text>
+      <text x="727" y="200" fill="#34d399" font-size="8" text-anchor="middle">synthesize_meta_review()</text>
+      <text x="727" y="212" fill="#34d399" font-size="8" text-anchor="middle">get_client()</text>
+      <text x="727" y="224" fill="#34d399" font-size="8" text-anchor="middle">compute_average_scores()</text>
 
-      <!-- Arrow: meta → export -->
-      <line x1="547" y1="292" x2="547" y2="318" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
-      <text x="556" y="308" fill="#94a3b8" font-size="8">meta_review + avg_scores</text>
+      <!-- Arrow: reviewer_engine → MetaReview (ReviewResult[]) -->
+      <line x1="390" y1="200" x2="390" y2="290" stroke="#34d399" stroke-width="1.5"/>
+      <line x1="390" y1="290" x2="727" y2="290" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+      <line x1="640" y1="290" x2="640" y2="235" stroke="#34d399" stroke-width="1.5"/>
+      <text x="558" y="284" fill="#94a3b8" font-size="8">ReviewResult[]</text>
+
+      <!-- Arrow: meta_review → export (meta_review dict) -->
+      <line x1="727" y1="235" x2="727" y2="295" stroke="#34d399" stroke-width="2" marker-end="url(#arr-emerald)"/>
+      <text x="735" y="268" fill="#94a3b8" font-size="8">meta_review dict</text>
 
       <!-- export / pdf_export -->
-      <rect x="462" y="318" width="170" height="62" rx="6"
+      <rect x="640" y="295" width="175" height="60" rx="6"
         fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
-      <text x="547" y="338" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/export/pdf_export.py</text>
-      <text x="547" y="354" fill="#34d399" font-size="8" text-anchor="middle">reportlab SimpleDocTemplate</text>
-      <text x="547" y="367" fill="#34d399" font-size="8" text-anchor="middle">export_pdf() → .pdf file</text>
+      <text x="727" y="315" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/export/pdf_export.py</text>
+      <text x="727" y="330" fill="#34d399" font-size="8" text-anchor="middle">reportlab SimpleDocTemplate</text>
+      <text x="727" y="344" fill="#34d399" font-size="8" text-anchor="middle">export_pdf() → .pdf file</text>
 
-      <!-- config.py (referenced) -->
-      <rect x="660" y="212" width="150" height="80" rx="6"
-        fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-      <text x="735" y="233" fill="white" font-size="11" font-weight="600" text-anchor="middle">app/config.py</text>
-      <text x="735" y="250" fill="#fbbf24" font-size="8" text-anchor="middle">VENUES (6 venues)</text>
-      <text x="735" y="263" fill="#fbbf24" font-size="8" text-anchor="middle">PERSONAS (3 personas)</text>
-      <text x="735" y="276" fill="#fbbf24" font-size="8" text-anchor="middle">DIMENSIONS (5 dims)</text>
+      <!-- Arrow: MetaReview → Export (avg_scores) -->
+      <line x1="815" y1="200" x2="880" y2="200" stroke="#34d399" stroke-width="1.5"/>
+      <line x1="880" y1="200" x2="880" y2="325" stroke="#34d399" stroke-width="1.5"/>
+      <line x1="880" y1="325" x2="815" y2="325" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+      <text x="847" y="195" fill="#94a3b8" font-size="8">avg_scores</text>
 
-      <!-- Dashed arrows: config → pipeline modules -->
-      <line x1="660" y1="252" x2="402" y2="252" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4"/>
-      <line x1="660" y1="252" x2="462" y2="252" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4"/>
-      <text x="580" y="246" fill="#fbbf24" font-size="7">venue + persona info</text>
+      <!-- prompts box (violet) -->
+      <rect x="30" y="270" width="155" height="65" rx="6"
+        fill="rgba(76, 29, 149, 0.35)" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="107" y="290" fill="white" font-size="10" font-weight="700" text-anchor="middle">app/prompts/</text>
+      <text x="107" y="305" fill="#a78bfa" font-size="8" text-anchor="middle">system_prompt.py</text>
+      <text x="107" y="317" fill="#a78bfa" font-size="8" text-anchor="middle">reviewer_prompts.py</text>
+      <text x="107" y="329" fill="#a78bfa" font-size="8" text-anchor="middle">meta_review_prompt.py</text>
+
+      <!-- Arrow: prompts → reviewer_engine & meta_review -->
+      <line x1="185" y1="302" x2="215" y2="302" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arr-violet)"/>
+      <line x1="302" y1="270" x2="302" y2="260" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="302" y1="260" x2="107" y2="260" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="107" y1="270" x2="107" y2="235" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="640" y1="270" x2="640" y2="260" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="640" y1="260" x2="107" y2="260" stroke="#a78bfa" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="200" y="256" fill="#a78bfa" font-size="8">prompt strings</text>
+
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <!-- LLM PROVIDER BOUNDARY                                     -->
+      <!-- SECTION C: LLM PROVIDERS (bottom row)                 -->
       <!-- ═══════════════════════════════════════════════════════ -->
-      <rect x="20" y="420" width="960" height="120" rx="12"
-        fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="6,4"/>
-      <text x="32" y="438" fill="#fbbf24" font-size="9" font-weight="600">LLM PROVIDER (auto-detected)</text>
+
+      <!-- LLM boundary -->
+      <rect x="20" y="430" width="1020" height="120" rx="10"
+        fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="32" y="448" fill="#fbbf24" font-size="9" font-weight="700" letter-spacing="0.1em">LLM PROVIDERS (auto-detected — priority: Ollama → Anthropic → OpenAI)</text>
+
+      <!-- Arrow: llm_client → providers (LLM calls) -->
+      <line x1="515" y1="235" x2="515" y2="430" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6,4"/>
+      <line x1="515" y1="430" x2="170" y2="480" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-amber)"/>
+      <line x1="515" y1="430" x2="515" y2="480" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-amber)"/>
+      <line x1="515" y1="430" x2="860" y2="480" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-amber)"/>
+      <text x="440" y="420" fill="#fbbf24" font-size="8">API calls (complete)</text>
+
+      <!-- Ollama box -->
+      <rect x="50" y="462" width="240" height="72" rx="6"
+        fill="rgba(120, 53, 15, 0.5)" stroke="#fbbf24" stroke-width="2"/>
+      <text x="170" y="483" fill="white" font-size="11" font-weight="700" text-anchor="middle">🐑 Ollama (recommended)</text>
+      <text x="170" y="498" fill="#fbbf24" font-size="9" text-anchor="middle">OLLAMA_BASE_URL · OLLAMA_MODEL</text>
+      <text x="170" y="512" fill="#94a3b8" font-size="8" text-anchor="middle">localhost:11434 · llama3 / mistral / mixtral</text>
+      <text x="170" y="526" fill="#94a3b8" font-size="8" text-anchor="middle">No API key needed · Fully offline</text>
 
       <!-- Anthropic box -->
-      <rect x="60" y="452" width="200" height="70" rx="6"
-        fill="rgba(120, 53, 15, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
-      <text x="160" y="473" fill="white" font-size="11" font-weight="600" text-anchor="middle">Anthropic</text>
-      <text x="160" y="489" fill="#fbbf24" font-size="8" text-anchor="middle">claude-sonnet-4-20250514</text>
-      <text x="160" y="503" fill="#94a3b8" font-size="8" text-anchor="middle">ANTHROPIC_API_KEY</text>
-      <text x="160" y="517" fill="#94a3b8" font-size="8" text-anchor="middle">temperature=0.3 · max_tokens=4096</text>
-
-      <!-- OR badge -->
-      <text x="295" y="490" fill="#475569" font-size="12" font-weight="700" text-anchor="middle">or</text>
+      <rect x="320" y="462" width="200" height="72" rx="6"
+        fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="420" y="483" fill="white" font-size="11" font-weight="700" text-anchor="middle">🤖 Anthropic</text>
+      <text x="420" y="498" fill="#fbbf24" font-size="9" text-anchor="middle">ANTHROPIC_API_KEY</text>
+      <text x="420" y="512" fill="#94a3b8" font-size="8" text-anchor="middle">claude-sonnet-4-20250514</text>
+      <text x="420" y="526" fill="#94a3b8" font-size="8" text-anchor="middle">temperature=0.3 · max_tokens=4096</text>
 
       <!-- OpenAI box -->
-      <rect x="340" y="452" width="200" height="70" rx="6"
-        fill="rgba(120, 53, 15, 0.4)" stroke="#fbbf24" stroke-width="1.5"/>
-      <text x="440" y="473" fill="white" font-size="11" font-weight="600" text-anchor="middle">OpenAI</text>
-      <text x="440" y="489" fill="#fbbf24" font-size="8" text-anchor="middle">gpt-4o</text>
-      <text x="440" y="503" fill="#94a3b8" font-size="8" text-anchor="middle">OPENAI_API_KEY</text>
-      <text x="440" y="517" fill="#94a3b8" font-size="8" text-anchor="middle">temperature=0.3 · max_tokens=4096</text>
+      <rect x="550" y="462" width="200" height="72" rx="6"
+        fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="650" y="483" fill="white" font-size="11" font-weight="700" text-anchor="middle">🤖 OpenAI</text>
+      <text x="650" y="498" fill="#fbbf24" font-size="9" text-anchor="middle">OPENAI_API_KEY</text>
+      <text x="650" y="512" fill="#94a3b8" font-size="8" text-anchor="middle">gpt-4o · OPENAI_BASE_URL</text>
+      <text x="650" y="526" fill="#94a3b8" font-size="8" text-anchor="middle">temperature=0.3 · max_tokens=4096</text>
 
-      <!-- Arrow: reviewer_engine → LLM -->
-      <line x1="317" y1="292" x2="160" y2="452" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-amber)"/>
-      <line x1="402" y1="292" x2="160" y2="452" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
-      <line x1="402" y1="292" x2="440" y2="452" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
-      <line x1="547" y1="292" x2="160" y2="452" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
-      <line x1="547" y1="292" x2="440" y2="452" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,5"/>
-      <text x="460" y="380" fill="#fbbf24" font-size="8">API calls (temperature=0.2–0.3)</text>
+      <!-- OR badges between providers -->
+      <text x="305" y="502" fill="#475569" font-size="11" font-weight="700">or</text>
+      <text x="540" y="502" fill="#475569" font-size="11" font-weight="700">or</text>
+
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <!-- OUTPUT BOUNDARY                                          -->
+      <!-- SECTION D: OUTPUTS                                    -->
       <!-- ═══════════════════════════════════════════════════════ -->
-      <rect x="20" y="560" width="960" height="100" rx="12"
-        fill="rgba(8, 51, 68, 0.1)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="6,4"/>
-      <text x="32" y="578" fill="#22d3ee" font-size="9" font-weight="600">OUTPUTS</text>
 
-      <!-- Streamlit display -->
-      <rect x="40" y="590" width="200" height="56" rx="6"
-        fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1.5"/>
-      <text x="140" y="610" fill="white" font-size="11" font-weight="600" text-anchor="middle">Streamlit UI Display</text>
-      <text x="140" y="626" fill="#94a3b8" font-size="8" text-anchor="middle">Score cards · Verdict row</text>
-      <text x="140" y="639" fill="#94a3b8" font-size="8" text-anchor="middle">Expander reviews · Meta-review</text>
+      <!-- OUTPUTS boundary -->
+      <rect x="20" y="570" width="1020" height="115" rx="10"
+        fill="rgba(8, 51, 68, 0.12)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="32" y="588" fill="#22d3ee" font-size="9" font-weight="700" letter-spacing="0.1em">OUTPUTS</text>
 
-      <!-- PDF output -->
-      <rect x="280" y="590" width="220" height="56" rx="6"
-        fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1.5"/>
-      <text x="390" y="610" fill="white" font-size="11" font-weight="600" text-anchor="middle">PDF Report</text>
-      <text x="390" y="626" fill="#94a3b8" font-size="8" text-anchor="middle">Cover · Executive Summary</text>
-      <text x="390" y="639" fill="#94a3b8" font-size="8" text-anchor="middle">Score cards · Meta-review · Individual</text>
+      <!-- Arrow: reviewer_engine → Display -->
+      <line x1="302" y1="235" x2="302" y2="570" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <line x1="302" y1="570" x2="170" y2="620" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
+      <text x="308" y="560" fill="#22d3ee" font-size="8">results</text>
 
-      <!-- Download arrow -->
-      <line x1="500" y1="618" x2="545" y2="618" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
-      <text x="523" y="612" fill="#94a3b8" font-size="8" text-anchor="middle">st.download_button</text>
-
-      <!-- Report sections detail -->
-      <rect x="545" y="590" width="420" height="56" rx="6"
-        fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1"/>
-      <text x="755" y="607" fill="#94a3b8" font-size="8" text-anchor="middle">Cover · Executive Summary · Score Cards</text>
-      <text x="755" y="621" fill="#94a3b8" font-size="8" text-anchor="middle">Verdicts Row · Meta-Review Synthesis</text>
-      <text x="755" y="635" fill="#94a3b8" font-size="8" text-anchor="middle">Individual Reviews (scores, strengths,</text>
-      <text x="755" y="647" fill="#94a3b8" font-size="8" text-anchor="middle">weaknesses, questions, suggestions)</text>
+      <!-- Arrow: meta_review → Display -->
+      <line x1="727" y1="235" x2="727" y2="570" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <line x1="727" y1="570" x2="430" y2="620" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arr-cyan)"/>
+      <text x="733" y="560" fill="#22d3ee" font-size="8">meta_review</text>
 
       <!-- Arrow: export → PDF -->
-      <line x1="632" y1="349" x2="620" y2="590" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arr-emerald)"/>
-      <text x="646" y="470" fill="#34d399" font-size="8">reportlab PDF</text>
+      <line x1="727" y1="355" x2="727" y2="570" stroke="#34d399" stroke-width="2"/>
+      <line x1="727" y1="570" x2="690" y2="620" stroke="#34d399" stroke-width="2" marker-end="url(#arr-emerald)"/>
+      <text x="735" y="540" fill="#34d399" font-size="8">PDF file</text>
 
-      <!-- Arrow: UI → pipeline (feedback for display) -->
-      <line x1="132" y1="142" x2="107" y2="212" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
-      <line x1="317" y1="142" x2="317" y2="212" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
-      <line x1="547" y1="142" x2="547" y2="212" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
+      <!-- Streamlit display box -->
+      <rect x="50" y="600" width="240" height="70" rx="6"
+        fill="rgba(8, 51, 68, 0.7)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="170" y="621" fill="white" font-size="11" font-weight="700" text-anchor="middle">📊 Streamlit UI Display</text>
+      <text x="170" y="636" fill="#94a3b8" font-size="8" text-anchor="middle">Score cards · Verdict row</text>
+      <text x="170" y="649" fill="#94a3b8" font-size="8" text-anchor="middle">Expander reviews · Meta-review</text>
+      <text x="170" y="662" fill="#94a3b8" font-size="8" text-anchor="middle">st.session_state persistence</text>
+
+      <!-- PDF box -->
+      <rect x="320" y="600" width="200" height="70" rx="6"
+        fill="rgba(8, 51, 68, 0.7)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="420" y="621" fill="white" font-size="11" font-weight="700" text-anchor="middle">📄 PDF Report</text>
+      <text x="420" y="636" fill="#94a3b8" font-size="8" text-anchor="middle">Cover · Executive Summary</text>
+      <text x="420" y="649" fill="#94a3b8" font-size="8" text-anchor="middle">Score Cards · Verdict · Meta-review</text>
+      <text x="420" y="662" fill="#94a3b8" font-size="8" text-anchor="middle">Individual Reviews (full)</text>
+
+      <!-- Arrow: PDF → download -->
+      <line x1="520" y1="635" x2="570" y2="635" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr-cyan)"/>
+      <text x="545" y="629" fill="#94a3b8" font-size="8">st.download_button</text>
+
+      <!-- Download / sections detail -->
+      <rect x="570" y="600" width="260" height="70" rx="6"
+        fill="rgba(8, 51, 68, 0.35)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="700" y="617" fill="#94a3b8" font-size="8" text-anchor="middle">Cover · Executive Summary · Score Cards</text>
+      <text x="700" y="631" fill="#94a3b8" font-size="8" text-anchor="middle">Verdicts Row · Meta-Review Synthesis</text>
+      <text x="700" y="645" fill="#94a3b8" font-size="8" text-anchor="middle">Individual Reviews</text>
+      <text x="700" y="659" fill="#94a3b8" font-size="8" text-anchor="middle">(scores · strengths · weaknesses · questions · suggestions)</text>
+
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <!-- LEGEND                                                   -->
+      <!-- LEGEND                                                 -->
       <!-- ═══════════════════════════════════════════════════════ -->
-      <text x="20" y="685" fill="white" font-size="10" font-weight="600">Legend</text>
+      <text x="870" y="448" fill="white" font-size="9" font-weight="700">Legend</text>
 
-      <rect x="20" y="695" width="14" height="9" rx="2" fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1"/>
-      <text x="40" y="703" fill="#94a3b8" font-size="8">Frontend / UI</text>
+      <rect x="870" y="458" width="12" height="8" rx="2" fill="rgba(8, 51, 68, 0.7)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="888" y="466" fill="#94a3b8" font-size="8">Frontend / UI</text>
 
-      <rect x="130" y="695" width="14" height="9" rx="2" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1"/>
-      <text x="150" y="703" fill="#94a3b8" font-size="8">Backend / Processing</text>
+      <rect x="870" y="474" width="12" height="8" rx="2" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1"/>
+      <text x="888" y="482" fill="#94a3b8" font-size="8">Processing</text>
 
-      <rect x="280" y="695" width="14" height="9" rx="2" fill="rgba(76, 29, 149, 0.3)" stroke="#a78bfa" stroke-width="1"/>
-      <text x="300" y="703" fill="#94a3b8" font-size="8">Prompt Templates</text>
+      <rect x="870" y="490" width="12" height="8" rx="2" fill="rgba(76, 29, 149, 0.5)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="888" y="498" fill="#94a3b8" font-size="8">LLM Client / Prompts</text>
 
-      <rect x="420" y="695" width="14" height="9" rx="2" fill="rgba(120, 53, 15, 0.4)" stroke="#fbbf24" stroke-width="1"/>
-      <text x="440" y="703" fill="#94a3b8" font-size="8">LLM Provider / Config</text>
+      <rect x="870" y="506" width="12" height="8" rx="2" fill="rgba(120, 53, 15, 0.5)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="888" y="514" fill="#94a3b8" font-size="8">Config / LLM Provider</text>
 
-      <line x1="560" y1="700" x2="574" y2="700" stroke="#34d399" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
-      <text x="580" y="703" fill="#94a3b8" font-size="8">Data flow</text>
+      <line x1="870" y1="522" x2="882" y2="522" stroke="#34d399" stroke-width="2" marker-end="url(#arr-emerald)"/>
+      <text x="888" y="526" fill="#94a3b8" font-size="8">Data flow</text>
 
-      <line x1="670" y1="700" x2="684" y2="700" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arr-amber)"/>
-      <text x="690" y="703" fill="#94a3b8" font-size="8">LLM API call</text>
+      <line x1="870" y1="536" x2="882" y2="536" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arr-amber)"/>
+      <text x="888" y="540" fill="#94a3b8" font-size="8">LLM API call</text>
 
-      <rect x="780" y="695" width="14" height="9" rx="2" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
-      <text x="800" y="703" fill="#94a3b8" font-size="8">Boundary</text>
+      <line x1="870" y1="550" x2="882" y2="550" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arr-violet)"/>
+      <text x="888" y="554" fill="#94a3b8" font-size="8">Prompt / return</text>
 
     </svg>
   </div>
@@ -301,60 +358,48 @@
   <!-- Info Cards -->
   <div class="cards">
     <div class="card">
-      <div class="card-header">
-        <div class="card-dot cyan"></div>
-        <h3>Frontend</h3>
-      </div>
+      <div class="card-header"><div class="card-dot cyan"></div><h3>Frontend</h3></div>
       <ul>
         <li>• Streamlit UI at localhost:8501</li>
         <li>• Sidebar: venue + persona config</li>
         <li>• Tabs: paste text / upload file</li>
         <li>• Score cards, verdicts, accordions</li>
-        <li>• PDF download button</li>
+        <li>• PDF download via st.download_button</li>
       </ul>
     </div>
     <div class="card">
-      <div class="card-header">
-        <div class="card-dot emerald"></div>
-        <h3>Processing Pipeline</h3>
-      </div>
+      <div class="card-header"><div class="card-dot emerald"></div><h3>Processing Pipeline</h3></div>
       <ul>
         <li>• paper_loader: DOCX / PDF / text</li>
-        <li>• reviewer_engine: LLM calls + JSON parse</li>
-        <li>• meta_review: consensus synthesis</li>
+        <li>• llm_client: unified Ollama/Anthropic/OpenAI interface</li>
+        <li>• reviewer_engine: generate_review() → ReviewResult</li>
+        <li>• meta_review: synthesize_meta_review() + avg scores</li>
         <li>• pdf_export: ReportLab A4 PDF</li>
-        <li>• config: 6 venues, 3 personas, 5 dims</li>
       </ul>
     </div>
     <div class="card">
-      <div class="card-header">
-        <div class="card-dot violet"></div>
-        <h3>LLM Backends</h3>
-      </div>
+      <div class="card-header"><div class="card-dot violet"></div><h3>LLM Providers</h3></div>
       <ul>
-        <li>• Auto-detects ANTHROPIC_API_KEY</li>
-        <li>• Fallback: OPENAI_API_KEY</li>
-        <li>• Claude Sonnet 4 (Anthropic)</li>
-        <li>• GPT-4o (OpenAI)</li>
-        <li>• temperature=0.2–0.3 · max_tokens=4K</li>
+        <li>• Ollama: localhost:11434 · no API key · offline</li>
+        <li>• Anthropic: Claude Sonnet 4 · ANTHROPIC_API_KEY</li>
+        <li>• OpenAI: GPT-4o · OPENAI_API_KEY</li>
+        <li>• Auto-detected: Ollama checked first (no key needed)</li>
+        <li>• Unified via app/llm_client.py</li>
       </ul>
     </div>
     <div class="card">
-      <div class="card-header">
-        <div class="card-dot amber"></div>
-        <h3>Outputs</h3>
-      </div>
+      <div class="card-header"><div class="card-dot amber"></div><h3>Outputs</h3></div>
       <ul>
-        <li>• Inline score cards + verdicts</li>
-        <li>• Expandable individual reviews</li>
-        <li>• Meta-review synthesis</li>
+        <li>• Inline score cards + reviewer verdicts</li>
+        <li>• Expandable individual review sections</li>
+        <li>• Meta-review synthesis panel</li>
         <li>• Styled A4 PDF (cover + all sections)</li>
-        <li>• Download via st.download_button</li>
+        <li>• st.session_state persists across interactions</li>
       </ul>
     </div>
   </div>
 
-  <p class="footer">peer-review-sim · github.com/ydeven757 · Python 3.9+ · Streamlit + Anthropic/OpenAI + ReportLab</p>
+  <p class="footer">peer-review-sim · github.com/ydeven757 · Python 3.9+ · Streamlit · Ollama / Anthropic / OpenAI · ReportLab</p>
 </div>
 </body>
 </html>

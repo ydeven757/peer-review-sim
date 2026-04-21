@@ -23,39 +23,80 @@ Give it a paper (paste text, upload DOCX, or upload PDF), pick a target venue, s
 
 ## 🏗️ Architecture
 
+```mermaid
+%%{ init: { "theme": "dark", "themeVariables": {
+  "primaryColor": "#1e3a5f",
+  "primaryTextColor": "#e2e8f0",
+  "primaryBorderColor": "#22d3ee",
+  "lineColor": "#64748b",
+  "secondaryColor": "#064e3b",
+  "tertiaryColor": "#4c1d95"
+} } }%%
+
+flowchart TB
+    User(["👤 User<br/><small>Browser</small>"])
+
+    subgraph frontend["🔵 FRONTEND"]
+        UI["app/main.py<br/><small>Streamlit UI</small>"]
+        Input["Paper Input<br/><small>Paste / DOCX / PDF</small>"]
+        Config["app/config.py<br/><small>Venue · Persona · Dimension</small>"]
+    end
+
+    subgraph pipeline["🟢 PROCESSING PIPELINE"]
+        direction LR
+        Loader["app/paper_loader.py<br/><small>python-docx · pdfplumber</small>"]
+        Prompts["app/prompts/<br/>system_prompt.py<br/>reviewer_prompts.py<br/>meta_review_prompt.py"]
+
+        subgraph llm["app/llm_client.py"]
+            getclient["get_client()"]
+            ollama["Ollama<br/><small>localhost:11434</small>"]
+            anthropic["Anthropic<br/><small>Claude Sonnet 4</small>"]
+            openai["OpenAI<br/><small>GPT-4o</small>"]
+        end
+
+        ReviewerEngine["app/reviewer_engine.py<br/><small>generate_review()</small>"]
+        MetaReview["app/meta_review.py<br/><small>synthesize_meta_review()</small>"]
+        AvgScores["compute_average_scores()"]
+        Export["app/export/pdf_export.py<br/><small>reportlab A4 PDF</small>"]
+    end
+
+    subgraph outputs["🔵 OUTPUTS"]
+        Display["📊 Streamlit UI<br/><small>Score cards · Verdicts · Expander reviews</small>"]
+        PDF["📄 PDF Report<br/><small>Cover · Scores · Meta-review · Full reviews</small>"]
+    end
+
+    User --> UI
+    UI --> Input
+    UI --> Config
+    Input -->|"paper_text"| Loader
+    Loader -->|"paper_text"| ReviewerEngine
+    ReviewerEngine -->|"ReviewResult[]"| MetaReview
+    ReviewerEngine -->|"ReviewResult[]"| AvgScores
+    MetaReview -->|"meta_review"| Export
+    AvgScores -->|"avg_scores"| Export
+    Prompts -->|"prompt strings"| ReviewerEngine
+    Prompts -->|"prompt strings"| MetaReview
+    ReviewerEngine -.->|"complete()"| getclient
+    MetaReview -.->|"complete()"| getclient
+    getclient -.-> ollama
+    getclient -.-> anthropic
+    getclient -.-> openai
+    ReviewerEngine -->|"results"| Display
+    MetaReview -->|"meta_review"| Display
+    Export -->|"PDF file"| PDF
+    PDF -->|"st.download_button"| Display
+
+    classDef fe fill:#0e3a4a,stroke:#22d3ee,stroke-width:2px
+    classDef pipe fill:#064e3b,stroke:#34d399,stroke-width:2px
+    classDef llmbox fill:#312e81,stroke:#a78bfa,stroke-width:2px
+    classDef out fill:#0e3a4a,stroke:#22d3ee,stroke-width:2px
+    class UI,Input,Config fe
+    class Loader,ReviewerEngine,MetaReview,AvgScores,Export,llm pipe
+    class Prompts llmbox
+    class Display,PDF out
 ```
-                           ┌──────────────────────────────────────────────┐
-                           │                   USER                        │
-                           │    (Browser — Streamlit UI at :8501)          │
-                           └──────────────────────┬───────────────────────┘
-                                                  │
-                          ┌──────────────────────▼───────────────────────┐
-                          │              app/main.py                     │
-                          │         Streamlit Frontend + Session State      │
-                          └──────────────────────┬───────────────────────┘
-                                                  │
-           ┌──────────────────────────────────────┼─────────────────────────────────────┐
-           │                                      │                                     │
-           ▼                                      ▼                                     ▼
-┌──────────────────────┐            ┌──────────────────────┐           ┌──────────────────────┐
-│   app/paper_loader  │            │  app/reviewer_engine │           │   app/meta_review   │
-│                     │            │                      │           │                      │
-│  • DOCX (python-   │            │  • get_client()      │           │  • synthesize_      │
-│    docx)            │            │  • client.complete()│           │    meta_review()    │
-│  • PDF (pdfplumber)│◄──────────►│  • parse_json_resp()│           │  • compute_         │
-│  • Plain text      │  paper     │  • generate_review() │           │    average_scores() │
-└──────────────────────┘  text    └──────────┬───────────┘           └──────────┬───────────┘
-                                             │                                  │
-                                             ▼                                  │
-                               ┌──────────────────────────────┐                 │
-                               │      app/llm_client.py       │                 │
-                               │                              │                 │
-                               │  get_client() → provider:   │                 │
-                               │  • ollama  (local, no key)  │                 │
-                               │  • anthropic (Claude)       │                 │
-                               │  • openai   (GPT-4o)        │                 │
-                               └──────────────────────────────┘                 │
-```
+
+> **Interactive HTML diagram** with full layout available at [`docs/architecture-diagram.html`](docs/architecture-diagram.html) — open in any browser for a detailed labeled version.
 
 ### Module Reference
 
