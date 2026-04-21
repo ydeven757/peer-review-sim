@@ -279,3 +279,49 @@ def parse_json_response(raw: str) -> dict:
             pass
 
     return {"error": f"Could not parse JSON from LLM response (first 300 chars):\n{raw[:300]}"}
+
+
+# ── Connection tester ────────────────────────────────────────────────
+
+def test_connection(env_overrides: dict | None = None) -> dict:
+    """
+    Make a minimal LLM call to validate connectivity and credentials.
+
+    Returns a dict with keys:
+      - ok (bool): True if the call succeeded
+      - provider (str): The provider that was used
+      - model (str): The model that was used
+      - latency_ms (int): Round-trip time in milliseconds
+      - error (str): Error message if failed (present when ok=False)
+
+    This is a fire-and-forget test — errors are caught and returned,
+    never raised, so the UI can display them inline.
+    """
+    import time
+
+    overrides = env_overrides or {}
+    test_prompt = "Reply with exactly one word: 'ok'. No punctuation."
+
+    try:
+        client, model, provider = get_client(overrides)
+        start = time.monotonic()
+        raw = client.complete(
+            prompt=test_prompt,
+            system=None,
+            temperature=0.1,
+            max_tokens=20,
+        )
+        latency_ms = int((time.monotonic() - start) * 1000)
+        raw_lower = raw.strip().lower()
+        # Accept "ok", "ok.", "ok!", etc.
+        if raw_lower in ("ok", "ok.") or raw_lower.startswith("ok"):
+            return {"ok": True, "provider": provider, "model": model, "latency_ms": latency_ms}
+        return {
+            "ok": False,
+            "provider": provider,
+            "model": model,
+            "latency_ms": latency_ms,
+            "error": f"Unexpected response (expected 'ok', got): {raw.strip()[:100]}",
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

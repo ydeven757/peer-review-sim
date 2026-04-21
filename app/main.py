@@ -68,10 +68,13 @@ with st.sidebar:
     st.divider()
     st.subheader("🤖 LLM Configuration")
 
-    # Active provider detection
+    # Initialise test result in session state if not present
+    st.session_state.setdefault("llm_test_result", None)
+
+    # ── Active provider badge ────────────────────────────────────────
+    from app.llm_client import get_provider
     try:
-        from app.llm_client import get_provider
-        active_provider = get_provider()
+        active_provider = get_provider(env_overrides)
         provider_label = {
             "ollama": "🐑 Ollama (local)",
             "anthropic": "🤖 Anthropic",
@@ -79,9 +82,10 @@ with st.sidebar:
         }.get(active_provider, active_provider)
         st.success(f"Active: {provider_label}")
     except RuntimeError:
-        st.error("No LLM provider detected. Configure below:")
+        st.error("No LLM provider detected — enter an API key below or start Ollama.")
+        st.session_state.llm_test_result = None
 
-    # Ollama model selector
+    # ── Ollama model selector ────────────────────────────────────────
     selected_ollama_model = st.selectbox(
         "Ollama Model",
         options=OLLAMA_POPULAR_MODELS,
@@ -103,7 +107,7 @@ with st.sidebar:
         help="sk-proj-...",
     )
 
-    # Build env_overrides from sidebar inputs
+    # ── Build env_overrides from sidebar inputs ──────────────────────
     env_overrides: dict = {}
     if anthropic_key:
         env_overrides["anthropic_api_key"] = anthropic_key
@@ -111,6 +115,46 @@ with st.sidebar:
         env_overrides["openai_api_key"] = openai_key
     if selected_ollama_model:
         env_overrides["ollama_model"] = selected_ollama_model
+
+    # ── Test connection button ────────────────────────────────────────
+    from app.llm_client import test_connection
+
+    col_test, col_clear = st.columns([1, 1])
+    with col_test:
+        test_btn = st.button(
+            "🔗 Test Connection",
+            use_container_width=True,
+            help="Send a minimal prompt to validate LLM connectivity",
+        )
+    with col_clear:
+        clear_btn = st.button(
+            "Clear",
+            use_container_width=True,
+            help="Clear the test result",
+        )
+
+    if clear_btn:
+        st.session_state.llm_test_result = None
+        st.rerun()
+
+    if test_btn:
+        with st.spinner("Testing connection..."):
+            result = test_connection(env_overrides)
+            st.session_state.llm_test_result = result
+        st.rerun()
+
+    # ── Display persisted test result ─────────────────────────────────
+    result = st.session_state.get("llm_test_result")
+    if result is not None:
+        if result.get("ok"):
+            latency = result.get("latency_ms", "?")
+            model = result.get("model", "?")
+            provider = result.get("provider", "?")
+            st.success(
+                f"✅ Connected — **{provider}** ({model}) — {latency}ms"
+            )
+        else:
+            st.error(f"❌ Connection failed: {result.get('error', 'Unknown error')}")
 
 # ── Main content ────────────────────────────────────────────────────
 st.title("🔍 Peer Review Simulator")
