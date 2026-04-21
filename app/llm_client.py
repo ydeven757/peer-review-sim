@@ -49,6 +49,17 @@ def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "ant
     anthropic_key = overrides.get("anthropic_api_key") or os.getenv("ANTHROPIC_API_KEY") or ""
     openai_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or ""
     ollama_url = overrides.get("ollama_base_url") or os.getenv("OLLAMA_BASE_URL") or ""
+    ollama_model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL") or ""
+
+    # Explicit Ollama model in overrides = user wants Ollama, ignore API key env vars
+    if ollama_model and not ollama_url:
+        # User selected an Ollama model — try Ollama even if API keys exist in env
+        if ollama_url or _ollama_is_reachable():
+            return "ollama"
+        # Ollama not reachable but model was explicitly set — fail with clear message
+        raise RuntimeError(
+            f"Ollama model '{ollama_model}' selected but Ollama server is not reachable at localhost:11434"
+        )
 
     # Explicit API key in env_overrides always wins (user chose a provider via UI)
     if anthropic_key and not ollama_url:
@@ -56,7 +67,7 @@ def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "ant
     if openai_key and not ollama_url:
         return "openai"
 
-    # Otherwise: Ollama takes priority (no key needed, best for testing)
+    # Fallback: check for any available provider (env vars or Ollama)
     if ollama_url or _ollama_is_reachable():
         return "ollama"
     if anthropic_key:
