@@ -346,3 +346,38 @@ def test_connection(env_overrides: dict | None = None) -> dict:
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# ── List available Ollama models ───────────────────────────────────
+
+def list_ollama_models(timeout: float = 5.0) -> list[str]:
+    """
+    Fetch the list of available models from the local Ollama server.
+
+    Returns a list of model names, or an empty list if the server
+    is unreachable or returns an error.
+    """
+    import urllib.request
+    import urllib.error
+
+    try:
+        req = urllib.request.Request("http://localhost:11434/api/tags")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        models = data.get("models", [])
+        return sorted([m["name"] for m in models])
+    except Exception:
+        return []
+
+
+def get_ollama_model_choices() -> list[str]:
+    """
+    Get the list of available Ollama models for the UI dropdown.
+
+    If Ollama is reachable, returns the actual model list.
+    Otherwise returns the popular models fallback list.
+    """
+    models = list_ollama_models()
+    if models:
+        return models
+    return OLLAMA_POPULAR_MODELS

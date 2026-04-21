@@ -7,7 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from app.llm_client import OLLAMA_POPULAR_MODELS
+from app.llm_client import get_ollama_model_choices
 from app.config import VENUES, PERSONAS, DIMENSIONS
 from app.paper_loader import load_paper
 from app.reviewer_engine import generate_review
@@ -90,11 +90,14 @@ with st.sidebar:
         st.session_state.llm_test_result = None
 
     # ── Ollama model selector ────────────────────────────────────────
+    from app.llm_client import get_ollama_model_choices
+    ollama_choices = get_ollama_model_choices()
+
     selected_ollama_model = st.selectbox(
         "Ollama Model",
-        options=OLLAMA_POPULAR_MODELS,
+        options=ollama_choices,
         index=0,
-        help="Only used when Ollama is the active provider",
+        help="Models available on your local Ollama server",
     )
 
     anthropic_key = st.text_input(
