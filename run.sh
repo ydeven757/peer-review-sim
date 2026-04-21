@@ -3,6 +3,9 @@
 
 cd "$(dirname "$0")"
 
+# Set PYTHONPATH so 'app' module resolves correctly
+export PYTHONPATH="$(pwd)"
+
 # Check for API key
 if [[ -z "$ANTHROPIC_API_KEY" && -z "$OPENAI_API_KEY" ]]; then
     echo "WARNING: No ANTHROPIC_API_KEY or OPENAI_API_KEY set."
