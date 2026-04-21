@@ -17,56 +17,44 @@ Give it a paper (paste text, upload DOCX, or upload PDF), pick a target venue, s
 | **Structured scores** | 1–10 per dimension with written comments |
 | **Meta-review synthesis** | Consensus strengths, weaknesses, disputed aspects, final recommendation |
 | **PDF export** | Styled A4 report with cover, score cards, verdicts, meta-review, and individual reviews |
-| **LLM auto-detection** | Automatically uses Anthropic (Claude) or OpenAI (GPT-4o) based on available API key |
+| **LLM auto-detection** | Automatically uses Ollama (local), Anthropic (Claude), or OpenAI (GPT-4o) based on available credentials |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-                          ┌──────────────────────────────────────────────┐
-                          │                   USER                        │
-                          │    (Browser — Streamlit UI at :8501)          │
-                          └──────────────────────┬───────────────────────┘
-                                                 │
+                           ┌──────────────────────────────────────────────┐
+                           │                   USER                        │
+                           │    (Browser — Streamlit UI at :8501)          │
+                           └──────────────────────┬───────────────────────┘
+                                                  │
                           ┌──────────────────────▼───────────────────────┐
                           │              app/main.py                     │
                           │         Streamlit Frontend + Session State      │
                           └──────────────────────┬───────────────────────┘
-                                                 │
-           ┌─────────────────────────────────────┼─────────────────────────────────────┐
-           │                                     │                                     │
-           ▼                                     ▼                                     ▼
+                                                  │
+           ┌──────────────────────────────────────┼─────────────────────────────────────┐
+           │                                      │                                     │
+           ▼                                      ▼                                     ▼
 ┌──────────────────────┐            ┌──────────────────────┐           ┌──────────────────────┐
 │   app/paper_loader  │            │  app/reviewer_engine │           │   app/meta_review   │
 │                     │            │                      │           │                      │
-│  • DOCX (python-   │            │  • _get_llm_client()  │           │  • synthesize_      │
-│    docx)            │            │  • _call_llm()       │           │    meta_review()    │
-│  • PDF (pdfplumber)│◄──────────►│  • _parse_json_resp()│           │  • compute_         │
+│  • DOCX (python-   │            │  • get_client()      │           │  • synthesize_      │
+│    docx)            │            │  • client.complete()│           │    meta_review()    │
+│  • PDF (pdfplumber)│◄──────────►│  • parse_json_resp()│           │  • compute_         │
 │  • Plain text      │  paper     │  • generate_review() │           │    average_scores() │
 └──────────────────────┘  text    └──────────┬───────────┘           └──────────┬───────────┘
                                              │                                  │
                                              ▼                                  │
                                ┌──────────────────────────────┐                 │
-                               │        LLM Provider          │                 │
-                               │   Anthropic (Claude Sonnet)  │                 │
-                               │        or                    │                 │
-                               │   OpenAI (GPT-4o)            │                 │
+                               │      app/llm_client.py       │                 │
+                               │                              │                 │
+                               │  get_client() → provider:   │                 │
+                               │  • ollama  (local, no key)  │                 │
+                               │  • anthropic (Claude)       │                 │
+                               │  • openai   (GPT-4o)        │                 │
                                └──────────────────────────────┘                 │
-                                                                           │
-           ┌───────────────────────────────────────────────────────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│  app/export/         │
-│  pdf_export.py      │
-│                      │
-│  reportlab           │
-│  A4 PDF generation   │
-│  Cover + Scores +    │
-│  Meta-review +       │
-│  Individual Reviews  │
-└──────────────────────┘
 ```
 
 ### Module Reference
@@ -75,8 +63,9 @@ Give it a paper (paste text, upload DOCX, or upload PDF), pick a target venue, s
 |---|---|
 | `app/main.py` | Streamlit UI — sidebar, tabs, generation button, results display, PDF download |
 | `app/config.py` | Venue definitions, persona definitions, review dimension specs |
+| `app/llm_client.py` | Shared LLM client — Ollama / Anthropic / OpenAI unified interface (`get_client()`, `parse_json_response()`) |
 | `app/paper_loader.py` | Extracts text from DOCX (`python-docx`), PDF (`pdfplumber`), or raw text |
-| `app/reviewer_engine.py` | LLM client detection, API calls to Anthropic/OpenAI, JSON parsing |
+| `app/reviewer_engine.py` | Calls `get_client()` to generate structured reviews, parses JSON responses |
 | `app/meta_review.py` | Synthesizes meta-review from multiple `ReviewResult` objects |
 | `app/prompts/system_prompt.py` | System prompt defining persona role and JSON output schema |
 | `app/prompts/reviewer_prompts.py` | User prompt assembling paper text + venue + persona info |
@@ -90,7 +79,10 @@ Give it a paper (paste text, upload DOCX, or upload PDF), pick a target venue, s
 ### Prerequisites
 
 - **Python 3.9+**
-- **API key**: `ANTHROPIC_API_KEY` (Claude) or `OPENAI_API_KEY` (GPT-4o)
+- **LLM Provider** (one of):
+  - **Ollama** (recommended for testing — no API key, runs locally)
+  - **Anthropic API key** (`ANTHROPIC_API_KEY`) for Claude Sonnet 4
+  - **OpenAI API key** (`OPENAI_API_KEY`) for GPT-4o
 
 ### Quick Install
 
@@ -102,16 +94,26 @@ cd peer-review-sim
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Set your API key
-export ANTHROPIC_API_KEY='sk-ant-...'   # Claude recommended
-# OR
-export OPENAI_API_KEY='sk-...'          # GPT-4o fallback
+# 3a. Option A — Ollama (recommended for testing, no API key needed)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3          # or: mistral, mixtral, qwen2.5, etc.
+ollama serve                 # starts server on http://localhost:11434
+# App auto-detects Ollama — no env vars needed
+
+# 3b. Option B — Anthropic Claude
+export ANTHROPIC_API_KEY='sk-ant-...'
+
+# 3c. Option C — OpenAI GPT-4o
+export OPENAI_API_KEY='sk-...'
 
 # 4. Run
 ./run.sh
 ```
 
 The app will open at **http://localhost:8501**.
+
+> **Provider priority:** Ollama → Anthropic → OpenAI. The app uses the first
+> provider it finds. Set `OLLAMA_BASE_URL` / `OLLAMA_MODEL` to override defaults.
 
 ### Dependencies
 
@@ -122,7 +124,72 @@ pdfplumber>=0.11.0
 reportlab>=4.0.0
 anthropic>=0.20.0
 openai>=1.30.0
+# No extra dependency needed for Ollama — uses stdlib urllib
 ```
+
+---
+
+## 🤖 Ollama Setup (Local Testing)
+
+Ollama is the recommended provider for development and testing — no API key needed, fully offline, instant responses.
+
+### Installation
+
+```bash
+# macOS / Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Windows — download from https://ollama.com/download
+```
+
+### Pull a model
+
+```bash
+# Lightweight all-rounder (recommended for first run)
+ollama pull llama3
+
+# Smaller, faster
+ollama pull mistral
+
+# Larger, more capable
+ollama pull mixtral
+
+# Code-focused
+ollama pull codellama
+
+# Show all available models at https://ollama.com/library
+```
+
+### Start the server
+
+```bash
+ollama serve
+# Server runs at http://localhost:11434
+# The app connects automatically — no env vars needed.
+```
+
+### Configuration (optional)
+
+```bash
+# Override default model (default: llama3)
+export OLLAMA_MODEL=mistral
+
+# Use a remote Ollama server
+export OLLAMA_BASE_URL=http://your-server:11434/v1
+
+# In app/main.py you could also expose model selection in the sidebar:
+#   OLLAMA_MODEL = st.selectbox("Ollama Model", ["llama3", "mistral", "mixtral"])
+```
+
+### Which model to use?
+
+| Model | Size | Strengths | Best for |
+|---|---|---|---|
+| `llama3` | 8B | Well-rounded, good instruction following | General reviews |
+| `mistral` | 7B | Fast, strong reasoning | Quick iteration |
+| `mixtral` | 8x7B | Expert-level reasoning, SOTA for its size | Detailed reviews |
+| `qwen2.5` | 7B | Strong code & technical content | Code-heavy papers |
+| `codellama` | 7B | Code generation & explanation | Papers with algorithms |
 
 ---
 
@@ -199,10 +266,16 @@ The meta-review synthesizes consensus across all personas:
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes (unless `OPENAI_API_KEY`) | Anthropic API key for Claude models |
-| `OPENAI_API_KEY` | Yes (unless `ANTHROPIC_API_KEY`) | OpenAI API key for GPT models |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OLLAMA_BASE_URL` | For Ollama | `http://localhost:11434/v1` | Ollama server base URL |
+| `OLLAMA_MODEL` | For Ollama | `llama3` | Ollama model to use |
+| `ANTHROPIC_API_KEY` | For Anthropic | — | Anthropic API key for Claude Sonnet 4 |
+| `OPENAI_API_KEY` | For OpenAI | — | OpenAI API key for GPT-4o |
+| `OPENAI_BASE_URL` | For OpenAI proxies | `https://api.openai.com/v1` | OpenAI-compatible base URL |
+| `OPENAI_MODEL` | For OpenAI | `gpt-4o` | OpenAI model name |
+
+> **Priority:** Ollama is checked first (no API key needed). Then Anthropic, then OpenAI.
 
 The app auto-detects which key is available. Claude Sonnet 4 is used by default for Anthropic; GPT-4o is used for OpenAI.
 

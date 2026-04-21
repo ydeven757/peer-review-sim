@@ -1,12 +1,9 @@
 """Core LLM-powered reviewer generation engine."""
 from __future__ import annotations
 
-import json
-import os
-import re
 from dataclasses import dataclass, asdict
-from typing import Literal
 
+from app.llm_client import get_client, parse_json_response
 from app.prompts.system_prompt import build_system_prompt
 from app.prompts.reviewer_prompts import build_reviewer_prompt
 
@@ -30,93 +27,6 @@ class ReviewResult:
         return asdict(self)
 
 
-def _get_llm_client() -> tuple:
-    """
-    Returns (client, model_name, provider) tuple.
-    Provider is 'anthropic' or 'openai'.
-    """
-    if api_key := os.getenv("ANTHROPIC_API_KEY"):
-        import anthropic
-        return anthropic.Anthropic(api_key=api_key), "claude-sonnet-4-20250514", "anthropic"
-    elif api_key := os.getenv("OPENAI_API_KEY"):
-        import openai
-        client = openai.OpenAI(api_key=api_key)
-        return client, "gpt-4o", "openai"
-    else:
-        raise RuntimeError(
-            "No API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your environment."
-        )
-
-
-def _call_llm(
-    client,
-    model: str,
-    provider: str,
-    system_prompt: str,
-    user_prompt: str,
-    max_tokens: int = 4096,
-) -> str:
-    """Call the LLM and return the raw response text."""
-    if provider == "anthropic":
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=0.3,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        return response.content[0].text
-    elif provider == "openai":
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            max_tokens=max_tokens,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-        return response.choices[0].message.content
-    else:
-        raise ValueError(f"Unknown provider: {provider}")
-
-
-def _parse_json_response(raw: str) -> dict:
-    """
-    Parse JSON from LLM response.
-    Tries direct parse first, then extracts from markdown code blocks.
-    """
-    raw = raw.strip()
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        pass
-
-    # Try to extract from ```json ... ``` or ``` ... ```
-    match = re.search(
-        r"```(?:json)?\s*(\{.*?\})\s*```",
-        raw,
-        re.DOTALL,
-    )
-    if match:
-        try:
-            return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # Try to find any {...} block
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(0))
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError(
-        f"Could not parse JSON from LLM response (first 300 chars):\n{raw[:300]}"
-    )
-
-
 def generate_review(
     paper_text: str,
     venue: str,
@@ -138,10 +48,10 @@ def generate_review(
         A ReviewResult dataclass with all review fields.
 
     Raises:
-        RuntimeError: If no API key is set.
+        RuntimeError: If no LLM provider is available (no API key, no Ollama).
         ValueError: If the LLM response cannot be parsed as JSON.
     """
-    client, model, provider = _get_llm_client()
+    client, model, provider = get_client()
     system_prompt = build_system_prompt(venue, persona_key, persona_info["name"])
     user_prompt = build_reviewer_prompt(
         paper_text=paper_text,
@@ -151,8 +61,15 @@ def generate_review(
         persona_info=persona_info,
     )
 
-    raw = _call_llm(client, model, provider, system_prompt, user_prompt)
-    data = _parse_json_response(raw)
+    raw = client.complete(
+        prompt=user_prompt,
+        system=system_prompt,
+        temperature=0.3,
+        max_tokens=4096,
+    )
+    data = parse_json_response(raw)
+    if "error" in data:
+        raise ValueError(data["error"])
 
     return ReviewResult(
         persona=persona_info["name"],
