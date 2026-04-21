@@ -114,9 +114,10 @@ def get_client(env_overrides: Optional[dict] = None):
     if provider == "anthropic":
         import anthropic
         api_key = overrides.get("anthropic_api_key") or os.getenv("ANTHROPIC_API_KEY")
+        model = "claude-sonnet-4-20250514"
         return (
-            _AnthropicClient(anthropic.Anthropic(api_key=api_key)),
-            "claude-sonnet-4-20250514",
+            _AnthropicClient(anthropic.Anthropic(api_key=api_key), model=model),
+            model,
             "anthropic",
         )
 
@@ -126,7 +127,7 @@ def get_client(env_overrides: Optional[dict] = None):
         api_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
         model = overrides.get("openai_model") or os.getenv("OPENAI_MODEL", "gpt-4o")
         return (
-            _OpenAIClient(openai.OpenAI(api_key=api_key, base_url=base_url)),
+            _OpenAIClient(openai.OpenAI(api_key=api_key, base_url=base_url), model=model),
             model,
             "openai",
         )
@@ -196,8 +197,9 @@ class _OllamaClient:
 
 
 class _AnthropicClient:
-    def __init__(self, client):
+    def __init__(self, client, model: str = "claude-sonnet-4-20250514"):
         self._client = client
+        self._model = model
 
     def complete(
         self,
@@ -208,7 +210,7 @@ class _AnthropicClient:
         max_tokens: int = 4096,
     ) -> str:
         kwargs = dict(
-            model=self._client.model,
+            model=self._model,
             max_tokens=max_tokens,
             temperature=temperature,
             messages=[{"role": "user", "content": prompt}],
@@ -220,8 +222,9 @@ class _AnthropicClient:
 
 
 class _OpenAIClient:
-    def __init__(self, client):
+    def __init__(self, client, model: str):
         self._client = client
+        self._model = model
 
     def complete(
         self,
@@ -236,7 +239,7 @@ class _OpenAIClient:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
         response = self._client.chat.completions.create(
-            model=self._client.model,
+            model=self._model,
             temperature=temperature,
             max_tokens=max_tokens,
             messages=messages,
