@@ -76,52 +76,64 @@ with st.sidebar:
     _initial_env_overrides: dict = {}
 
     # ── Active provider badge ────────────────────────────────────────
-    from app.llm_client import get_provider
-    try:
-        active_provider = get_provider(_initial_env_overrides)
-        provider_label = {
+    provider_label = {
+        "ollama": "🐑 Ollama (local)",
+        "anthropic": "🤖 Anthropic",
+        "openai": "🤖 OpenAI",
+    }.get(st.session_state.get("selected_llm_provider", "ollama"), "ollama")
+    st.success(f"Active: {provider_label}")
+
+# ── LLM Provider Selection ──────────────────────────────────────
+    st.session_state.setdefault("selected_llm_provider", "ollama")
+
+    selected_provider = st.radio(
+        "Select LLM Provider",
+        options=["ollama", "anthropic", "openai"],
+        format_func=lambda x: {
             "ollama": "🐑 Ollama (local)",
             "anthropic": "🤖 Anthropic",
             "openai": "🤖 OpenAI",
-        }.get(active_provider, active_provider)
-        st.success(f"Active: {provider_label}")
-    except RuntimeError:
-        st.error("No LLM provider detected — enter an API key below or start Ollama.")
-        st.session_state.llm_test_result = None
-
-    # ── Ollama model selector ────────────────────────────────────────
-    from app.llm_client import get_ollama_model_choices
-    ollama_choices = get_ollama_model_choices()
-
-    selected_ollama_model = st.selectbox(
-        "Ollama Model",
-        options=ollama_choices,
-        index=0,
-        help="Models available on your local Ollama server",
+        }[x],
+        horizontal=True,
+        help="Choose which LLM to use for generating reviews",
     )
+    st.session_state.selected_llm_provider = selected_provider
 
-    anthropic_key = st.text_input(
-        "Anthropic API Key",
-        type="password",
-        placeholder="sk-ant-...",
-        help="sk-ant-api01-...",
-    )
-
-    openai_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        placeholder="sk-...",
-        help="sk-proj-...",
-    )
-
-    # ── Finalise env_overrides from widget values ────────────────────
+    # ── Provider-specific input ─────────────────────────────────────
     env_overrides: dict = {}
-    if anthropic_key:
-        env_overrides["anthropic_api_key"] = anthropic_key
-    if openai_key:
-        env_overrides["openai_api_key"] = openai_key
-    if selected_ollama_model:
-        env_overrides["ollama_model"] = selected_ollama_model
+
+    if selected_provider == "ollama":
+        from app.llm_client import get_ollama_model_choices
+        ollama_choices = get_ollama_model_choices()
+
+        selected_ollama_model = st.selectbox(
+            "Ollama Model",
+            options=ollama_choices,
+            index=0,
+            help="Models available on your local Ollama server",
+        )
+        if selected_ollama_model:
+            env_overrides["ollama_model"] = selected_ollama_model
+
+    elif selected_provider == "anthropic":
+        anthropic_key = st.text_input(
+            "Anthropic API Key",
+            type="password",
+            placeholder="sk-ant-...",
+            help="Enter your Anthropic API key",
+        )
+        if anthropic_key:
+            env_overrides["anthropic_api_key"] = anthropic_key
+
+    elif selected_provider == "openai":
+        openai_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            placeholder="sk-...",
+            help="Enter your OpenAI API key",
+        )
+        if openai_key:
+            env_overrides["openai_api_key"] = openai_key
 
     # ── Test connection button ────────────────────────────────────────
     from app.llm_client import test_connection
