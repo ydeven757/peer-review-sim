@@ -71,10 +71,14 @@ with st.sidebar:
     # Initialise test result in session state if not present
     st.session_state.setdefault("llm_test_result", None)
 
+    # ── Build env_overrides from current sidebar values ──────────────
+    # (widget values below will be read after they render; start with empty)
+    _initial_env_overrides: dict = {}
+
     # ── Active provider badge ────────────────────────────────────────
     from app.llm_client import get_provider
     try:
-        active_provider = get_provider(env_overrides)
+        active_provider = get_provider(_initial_env_overrides)
         provider_label = {
             "ollama": "🐑 Ollama (local)",
             "anthropic": "🤖 Anthropic",
@@ -107,7 +111,7 @@ with st.sidebar:
         help="sk-proj-...",
     )
 
-    # ── Build env_overrides from sidebar inputs ──────────────────────
+    # ── Finalise env_overrides from widget values ────────────────────
     env_overrides: dict = {}
     if anthropic_key:
         env_overrides["anthropic_api_key"] = anthropic_key
