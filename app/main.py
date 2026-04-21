@@ -7,6 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from app.llm_client import OLLAMA_POPULAR_MODELS
 from app.config import VENUES, PERSONAS, DIMENSIONS
 from app.paper_loader import load_paper
 from app.reviewer_engine import generate_review
@@ -63,6 +64,53 @@ with st.sidebar:
     st.subheader("Dimension Weights")
     for dim in DIMENSIONS:
         st.text(f"• {dim['label']}: {dim['weight']:.0%}")
+
+    st.divider()
+    st.subheader("🤖 LLM Configuration")
+
+    # Active provider detection
+    try:
+        from app.llm_client import get_provider
+        active_provider = get_provider()
+        provider_label = {
+            "ollama": "🐑 Ollama (local)",
+            "anthropic": "🤖 Anthropic",
+            "openai": "🤖 OpenAI",
+        }.get(active_provider, active_provider)
+        st.success(f"Active: {provider_label}")
+    except RuntimeError:
+        st.error("No LLM provider detected. Configure below:")
+
+    # Ollama model selector
+    selected_ollama_model = st.selectbox(
+        "Ollama Model",
+        options=OLLAMA_POPULAR_MODELS,
+        index=0,
+        help="Only used when Ollama is the active provider",
+    )
+
+    anthropic_key = st.text_input(
+        "Anthropic API Key",
+        type="password",
+        placeholder="sk-ant-...",
+        help="sk-ant-api01-...",
+    )
+
+    openai_key = st.text_input(
+        "OpenAI API Key",
+        type="password",
+        placeholder="sk-...",
+        help="sk-proj-...",
+    )
+
+    # Build env_overrides from sidebar inputs
+    env_overrides: dict = {}
+    if anthropic_key:
+        env_overrides["anthropic_api_key"] = anthropic_key
+    if openai_key:
+        env_overrides["openai_api_key"] = openai_key
+    if selected_ollama_model:
+        env_overrides["ollama_model"] = selected_ollama_model
 
 # ── Main content ────────────────────────────────────────────────────
 st.title("🔍 Peer Review Simulator")
@@ -164,6 +212,7 @@ if generate and paper_text and st.session_state.selected_personas:
                 venue_info=VENUES[st.session_state.venue],
                 persona_key=persona_key,
                 persona_info=PERSONAS[persona_key],
+                env_overrides=env_overrides,
             )
             reviews.append(result)
         except Exception as e:
@@ -187,6 +236,7 @@ if generate and paper_text and st.session_state.selected_personas:
                 reviews,
                 venue=st.session_state.venue,
                 paper_title=st.session_state.paper_title,
+                env_overrides=env_overrides,
             )
             st.session_state.meta_review = meta
         except Exception as e:

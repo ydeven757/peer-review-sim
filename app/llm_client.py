@@ -4,33 +4,71 @@ Provider priority (first available wins):
   1. ollama     — local, no API key needed (best for testing)
   2. anthropic  — Anthropic's Claude models (requires ANTHROPIC_API_KEY)
   3. openai     — OpenAI models via compatible endpoint (requires OPENAI_API_KEY)
+
+All functions accept optional env_overrides dict to allow runtime overrides
+(e.g., from Streamlit sidebar inputs) without needing to set environment variables.
 """
+
 from __future__ import annotations
 
 import os
 import re
 import json
-from typing import Literal
+from typing import Literal, Optional
 
 
-# ── Provider priority ───────────────────────────────────────────────
+# ── Popular Ollama models for the UI selector ────────────────────────────
 
-def get_provider() -> Literal["ollama", "anthropic", "openai"]:
+OLLAMA_POPULAR_MODELS = [
+    "llama3",
+    "llama3.1",
+    "llama3.2",
+    "mistral",
+    "mixtral",
+    "qwen2.5",
+    "qwen2.5-coder",
+    "gemma2",
+    "codellama",
+    "phi3",
+    "llava",
+]
+
+
+# ── Provider priority ────────────────────────────────────────────────────
+
+def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "anthropic", "openai"]:
     """
     Return the highest-priority available provider.
     Ollama is checked first because it requires no API key and is best for testing.
+
+    env_overrides: optional dict with keys like 'ollama_base_url', 'anthropic_api_key',
+                   'openai_api_key' — used when the provider is set via UI rather than env vars.
     """
-    if os.getenv("OLLAMA_BASE_URL") or _ollama_is_reachable():
-        return "ollama"
-    if os.getenv("ANTHROPIC_API_KEY"):
+    overrides = env_overrides or {}
+
+    anthropic_key = overrides.get("anthropic_api_key") or os.getenv("ANTHROPIC_API_KEY") or ""
+    openai_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or ""
+    ollama_url = overrides.get("ollama_base_url") or os.getenv("OLLAMA_BASE_URL") or ""
+
+    # Explicit API key in env_overrides always wins (user chose a provider via UI)
+    if anthropic_key and not ollama_url:
         return "anthropic"
-    if os.getenv("OPENAI_API_KEY"):
+    if openai_key and not ollama_url:
+        return "openai"
+
+    # Otherwise: Ollama takes priority (no key needed, best for testing)
+    if ollama_url or _ollama_is_reachable():
+        return "ollama"
+    if anthropic_key:
+        return "anthropic"
+    if openai_key:
         return "openai"
     raise RuntimeError(
-        "No LLM provider available. Set one of:\n"
-        "  OLLAMA_BASE_URL     — for local Ollama (no API key needed)\n"
-        "  ANTHROPIC_API_KEY   — for Claude Sonnet 4\n"
-        "  OPENAI_API_KEY      — for GPT-4o"
+        "No LLM provider available. Either:\n"
+        "  1. Run 'ollama serve' (local, no API key needed)\n"
+        "  2. Set ANTHROPIC_API_KEY environment variable\n"
+        "  3. Set OPENAI_API_KEY environment variable\n"
+        "  4. Or enter your API key in the sidebar configuration."
     )
 
 
@@ -47,7 +85,7 @@ def _ollama_is_reachable(timeout: float = 2.0) -> bool:
 
 # ── Client factory ─────────────────────────────────────────────────
 
-def get_client():
+def get_client(env_overrides: Optional[dict] = None):
     """
     Returns a (client, model, provider) tuple.
 
@@ -56,23 +94,42 @@ def get_client():
 
     This interface is identical for all providers, so callers don't need
     to know which backend is actually being used.
+
+    env_overrides: optional dict with runtime overrides for API keys and model names.
+                   Supports: ollama_base_url, ollama_model, anthropic_api_key,
+                   openai_api_key, openai_model.
     """
-    provider = get_provider()
+    overrides = env_overrides or {}
+    provider = get_provider(overrides)
 
     if provider == "ollama":
-        return _OllamaClient(), os.getenv("OLLAMA_MODEL", "llama3"), "ollama"
+        base_url = (
+            overrides.get("ollama_base_url")
+            or os.getenv("OLLAMA_BASE_URL")
+            or "http://localhost:11434/v1"
+        )
+        model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL", "llama3")
+        return _OllamaClient(base_url=base_url, model=model), model, "ollama"
+
     if provider == "anthropic":
         import anthropic
-        return _AnthropicClient(anthropic.Anthropic(
-            api_key=os.getenv("ANTHROPIC_API_KEY")
-        )), "claude-sonnet-4-20250514", "anthropic"
+        api_key = overrides.get("anthropic_api_key") or os.getenv("ANTHROPIC_API_KEY")
+        return (
+            _AnthropicClient(anthropic.Anthropic(api_key=api_key)),
+            "claude-sonnet-4-20250514",
+            "anthropic",
+        )
+
     if provider == "openai":
         import openai
-        base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
-        return _OpenAIClient(openai.OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            base_url=base_url,
-        )), os.getenv("OPENAI_MODEL", "gpt-4o"), "openai"
+        base_url = overrides.get("openai_base_url") or os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+        api_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
+        model = overrides.get("openai_model") or os.getenv("OPENAI_MODEL", "gpt-4o")
+        return (
+            _OpenAIClient(openai.OpenAI(api_key=api_key, base_url=base_url)),
+            model,
+            "openai",
+        )
 
 
 # ── Per-provider client wrappers ────────────────────────────────────
@@ -91,13 +148,13 @@ class _OllamaClient:
     Example models: llama3, llama3.1, mistral, mixtral, qwen2.5, codellama
     """
 
-    def __init__(self):
+    def __init__(self, base_url: str | None = None, model: str | None = None):
         import urllib.request
         import urllib.error
         self._urllib_request = urllib.request
         self._urllib_error = urllib.error
-        self._base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
-        self._model = os.getenv("OLLAMA_MODEL", "llama3")
+        self._base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+        self._model = model or os.getenv("OLLAMA_MODEL", "llama3")
 
     def complete(
         self,

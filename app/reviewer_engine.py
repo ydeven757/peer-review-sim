@@ -33,6 +33,7 @@ def generate_review(
     venue_info: dict,
     persona_key: str,
     persona_info: dict,
+    env_overrides: dict | None = None,
 ) -> ReviewResult:
     """
     Generate a single structured review for the given paper.
@@ -43,6 +44,7 @@ def generate_review(
         venue_info: The venue config dict from app.config.VENUES.
         persona_key: The persona key (e.g., "prolific").
         persona_info: The persona config dict from app.config.PERSONAS.
+        env_overrides: Optional dict of LLM overrides (api keys, model names).
 
     Returns:
         A ReviewResult dataclass with all review fields.
@@ -51,7 +53,7 @@ def generate_review(
         RuntimeError: If no LLM provider is available (no API key, no Ollama).
         ValueError: If the LLM response cannot be parsed as JSON.
     """
-    client, model, provider = get_client()
+    client, model, provider = get_client(env_overrides)
     system_prompt = build_system_prompt(venue, persona_key, persona_info["name"])
     user_prompt = build_reviewer_prompt(
         paper_text=paper_text,

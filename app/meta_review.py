@@ -14,6 +14,7 @@ def synthesize_meta_review(
     reviews: list[ReviewResult],
     venue: str,
     paper_title: str = "Research Paper",
+    env_overrides: dict | None = None,
 ) -> dict:
     """
     Synthesize a meta-review from multiple reviewer results.
@@ -22,6 +23,7 @@ def synthesize_meta_review(
         reviews: List of ReviewResult dataclasses from generate_review().
         venue: Target venue name.
         paper_title: Title of the paper (for display).
+        env_overrides: Optional dict of LLM overrides (api keys, model names).
 
     Returns:
         A dict with keys:
@@ -42,7 +44,7 @@ def synthesize_meta_review(
         "Be fair, balanced, and specific. Return ONLY valid JSON matching the schema provided."
     )
 
-    client, _, _ = get_client()
+    client, _, _ = get_client(env_overrides)
     raw = client.complete(
         prompt=prompt,
         system=system_prompt,
