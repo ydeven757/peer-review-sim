@@ -86,9 +86,14 @@ with st.sidebar:
 # ── LLM Provider Selection ──────────────────────────────────────
     st.session_state.setdefault("selected_llm_provider", "ollama")
 
+    # Get current index for the radio to maintain state across reruns
+    provider_options = ["ollama", "anthropic", "openai"]
+    current_index = provider_options.index(st.session_state.get("selected_llm_provider", "ollama"))
+
     selected_provider = st.radio(
         "Select LLM Provider",
-        options=["ollama", "anthropic", "openai"],
+        options=provider_options,
+        index=current_index,
         format_func=lambda x: {
             "ollama": "🐑 Ollama (local)",
             "anthropic": "🤖 Anthropic",
@@ -96,6 +101,7 @@ with st.sidebar:
         }[x],
         horizontal=True,
         help="Choose which LLM to use for generating reviews",
+        key="llm_provider_radio",
     )
     st.session_state.selected_llm_provider = selected_provider
 
@@ -106,12 +112,18 @@ with st.sidebar:
         from app.llm_client import get_ollama_model_choices
         ollama_choices = get_ollama_model_choices()
 
+        # Get current selection to maintain state
+        current_model = st.session_state.get("selected_ollama_model", ollama_choices[0] if ollama_choices else "")
+        current_idx = ollama_choices.index(current_model) if current_model in ollama_choices else 0
+
         selected_ollama_model = st.selectbox(
             "Ollama Model",
             options=ollama_choices,
-            index=0,
+            index=current_idx,
+            key="ollama_model_select",
             help="Models available on your local Ollama server",
         )
+        st.session_state.selected_ollama_model = selected_ollama_model
         if selected_ollama_model:
             env_overrides["ollama_model"] = selected_ollama_model
 
