@@ -30,4 +30,3 @@ The JSON must have this exact schema:
 }}
 
 Do NOT return anything except JSON. Start with {{ and end with }}."""
-"""
