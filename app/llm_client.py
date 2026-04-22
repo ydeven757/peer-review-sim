@@ -49,12 +49,27 @@ def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "ant
     """
     overrides = env_overrides or {}
 
-    anthropic_key = overrides.get("anthropic_api_key") or os.getenv("ANTHROPIC_API_KEY") or ""
-    openai_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or ""
+    # Check for EXPLICIT overrides from UI first (ignore stale env vars)
+    has_explicit_ollama = bool(overrides.get("ollama_model"))
+    has_explicit_anthropic = bool(overrides.get("anthropic_api_key"))
+    has_explicit_openai = bool(overrides.get("openai_api_key"))
+    
+    # Only check env vars if no explicit override provided
+    anthropic_key = overrides.get("anthropic_api_key") or (os.getenv("ANTHROPIC_API_KEY") if not has_explicit_anthropic else "")
+    openai_key = overrides.get("openai_api_key") or (os.getenv("OPENAI_API_KEY") if not has_explicit_openai else "")
     ollama_url = overrides.get("ollama_base_url") or os.getenv("OLLAMA_BASE_URL") or ""
     ollama_model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL") or ""
     
     print(f"[DEBUG] get_provider: anthropic_key={'set' if anthropic_key else 'None'}, openai_key={'set' if openai_key else 'None'}, ollama_model={ollama_model}")
+    print(f"[DEBUG] Explicit overrides: anthropic={has_explicit_anthropic}, openai={has_explicit_openai}, ollama={has_explicit_ollama}")
+
+    # If user explicitly selected a provider via overrides, use that
+    if has_explicit_openai and openai_key:
+        return "openai"
+    if has_explicit_anthropic and anthropic_key:
+        return "anthropic"
+    if has_explicit_ollama and (ollama_url or _ollama_is_reachable()):
+        return "ollama"
 
     # Explicit Ollama model in overrides = user wants Ollama, ignore API key env vars
     if ollama_model and not ollama_url:
@@ -65,11 +80,7 @@ def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "ant
         )
 
     # If no explicit selections made (empty overrides), prefer Ollama for testing
-    is_explicit_selection = bool(
-        overrides.get("anthropic_api_key") 
-        or overrides.get("openai_api_key") 
-        or overrides.get("ollama_model")
-    )
+    is_explicit_selection = has_explicit_anthropic or has_explicit_openai or has_explicit_ollama
     
     if not is_explicit_selection:
         # No explicit selection — default to Ollama for local testing
