@@ -173,6 +173,9 @@ def get_client(env_overrides: Optional[dict] = None):
         base_url = overrides.get("openai_base_url") or os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
         api_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
         model = overrides.get("openai_model") or os.getenv("OPENAI_MODEL", "gpt-4o")
+        
+        print(f"[DEBUG] OpenAI: api_key={'set' if api_key else 'None'}, base_url={base_url}, model={model}")
+        
         return (
             _OpenAIClient(openai.OpenAI(api_key=api_key, base_url=base_url), model=model),
             model,
@@ -350,7 +353,12 @@ def test_connection(env_overrides: dict | None = None) -> dict:
     test_prompt = "Reply with exactly one word: 'ok'. No punctuation."
 
     try:
+        # Debug: log what we're using
+        print(f"[DEBUG] test_connection overrides: {overrides}")
+        
         client, model, provider = get_client(overrides)
+        print(f"[DEBUG] Using provider={provider}, model={model}")
+        
         start = time.monotonic()
         raw = client.complete(
             prompt=test_prompt,
@@ -371,6 +379,8 @@ def test_connection(env_overrides: dict | None = None) -> dict:
             "error": f"Unexpected response (expected 'ok', got): {raw.strip()[:100]}",
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"ok": False, "error": str(e)}
 
 
