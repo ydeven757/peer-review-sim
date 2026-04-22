@@ -20,18 +20,21 @@ from typing import Literal, Optional
 # ── Popular Ollama models for the UI selector ────────────────────────────
 
 OLLAMA_POPULAR_MODELS = [
+    "qwen2.5-coder:7b",
     "llama3",
     "llama3.1",
     "llama3.2",
     "mistral",
     "mixtral",
     "qwen2.5",
-    "qwen2.5-coder",
     "gemma2",
     "codellama",
     "phi3",
     "llava",
 ]
+
+# Default model to use when none specified — prefer one from actual server
+_OLLAMA_DEFAULT_MODEL = None  # Will be resolved on first use
 
 
 # ── Provider priority ────────────────────────────────────────────────────
@@ -104,6 +107,29 @@ def _ollama_is_reachable(timeout: float = 2.0) -> bool:
         return False
 
 
+def _get_default_ollama_model() -> str:
+    """Get a default Ollama model - prefer a free one from the server, fallback to popular."""
+    global _OLLAMA_DEFAULT_MODEL
+    if _OLLAMA_DEFAULT_MODEL is not None:
+        return _OLLAMA_DEFAULT_MODEL
+    
+    # Try to get from server - prefer free models over cloud/subscription models
+    available = list_ollama_models()
+    if available:
+        # Prefer qwen2.5-coder (free) over cloud models
+        for m in available:
+            if "cloud" not in m.lower():
+                _OLLAMA_DEFAULT_MODEL = m
+                return _OLLAMA_DEFAULT_MODEL
+        # If all are cloud models, use first one anyway
+        _OLLAMA_DEFAULT_MODEL = available[0]
+        return _OLLAMA_DEFAULT_MODEL
+    
+    # Fallback to popular
+    _OLLAMA_DEFAULT_MODEL = "qwen2.5-coder:7b"
+    return _OLLAMA_DEFAULT_MODEL
+
+
 # ── Client factory ─────────────────────────────────────────────────
 
 def get_client(env_overrides: Optional[dict] = None):
@@ -129,7 +155,7 @@ def get_client(env_overrides: Optional[dict] = None):
             or os.getenv("OLLAMA_BASE_URL")
             or "http://localhost:11434/v1"
         )
-        model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL", "llama3")
+        model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL") or _get_default_ollama_model()
         return _OllamaClient(base_url=base_url, model=model), model, "ollama"
 
     if provider == "anthropic":
