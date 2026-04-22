@@ -151,7 +151,7 @@ def _build_score_cards(avg_scores: dict, S) -> list:
             Paragraph(f"<b>{s}</b>/10", S["ScoreNum"]),
         ])
 
-    t = Table(cells, colWidths=[3.4 * cm] * 5, rowHeights=[0.9 * cm, 1.2 * cm])
+    t = Table(cells, colWidths=[12 * cm, 3 * cm])
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BG),
         ("BOX", (0, 0), (-1, -1), 1, BORDER),
