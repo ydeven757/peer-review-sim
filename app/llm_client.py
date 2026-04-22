@@ -53,6 +53,8 @@ def get_provider(env_overrides: Optional[dict] = None) -> Literal["ollama", "ant
     openai_key = overrides.get("openai_api_key") or os.getenv("OPENAI_API_KEY") or ""
     ollama_url = overrides.get("ollama_base_url") or os.getenv("OLLAMA_BASE_URL") or ""
     ollama_model = overrides.get("ollama_model") or os.getenv("OLLAMA_MODEL") or ""
+    
+    print(f"[DEBUG] get_provider: anthropic_key={'set' if anthropic_key else 'None'}, openai_key={'set' if openai_key else 'None'}, ollama_model={ollama_model}")
 
     # Explicit Ollama model in overrides = user wants Ollama, ignore API key env vars
     if ollama_model and not ollama_url:
@@ -350,12 +352,26 @@ def test_connection(env_overrides: dict | None = None) -> dict:
     import time
 
     overrides = env_overrides or {}
+    
+    # Debug: show what's being passed (masked)
+    debug_overrides = {}
+    for k, v in overrides.items():
+        if "key" in k.lower() and v:
+            debug_overrides[k] = v[:10] + "..." if len(v) > 10 else v
+        else:
+            debug_overrides[k] = v
+    print(f"[DEBUG] test_connection overrides: {debug_overrides}")
+    
+    # Check for stale env vars that might override
+    import os
+    if os.getenv("OPENAI_API_KEY"):
+        print(f"[DEBUG] WARNING: Stale OPENAI_API_KEY in environment!")
+    if os.getenv("ANTHROPIC_API_KEY"):
+        print(f"[DEBUG] WARNING: Stale ANTHROPIC_API_KEY in environment!")
+        
     test_prompt = "Reply with exactly one word: 'ok'. No punctuation."
 
     try:
-        # Debug: log what we're using
-        print(f"[DEBUG] test_connection overrides: {overrides}")
-        
         client, model, provider = get_client(overrides)
         print(f"[DEBUG] Using provider={provider}, model={model}")
         
