@@ -49,7 +49,7 @@ def synthesize_meta_review(
         prompt=prompt,
         system=system_prompt,
         temperature=0.2,
-        max_tokens=2048,
+        max_tokens=4096,  # Increased for slower Ollama models
     )
     result = parse_json_response(raw)
     return result
