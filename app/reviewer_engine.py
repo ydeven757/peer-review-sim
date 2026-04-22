@@ -67,7 +67,7 @@ def generate_review(
         prompt=user_prompt,
         system=system_prompt,
         temperature=0.3,
-        max_tokens=4096,
+        max_tokens=8192,  # Increased for slower Ollama models
     )
     data = parse_json_response(raw)
     if "error" in data:
