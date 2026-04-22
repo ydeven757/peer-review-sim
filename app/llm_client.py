@@ -232,7 +232,7 @@ class _OllamaClient:
             method="POST",
         )
         try:
-            with self._urllib_request.urlopen(req, timeout=120) as resp:
+            with self._urllib_request.urlopen(req, timeout=300) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
         except self._urllib_error.HTTPError as e:
             err_body = e.read().decode("utf-8") if e.fp else ""
